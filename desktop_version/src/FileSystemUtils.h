@@ -5,6 +5,7 @@
 class binaryBlob;
 
 #include <stddef.h>
+#include <string>
 
 // Forward declaration, including the entirety of tinyxml2.h across all files this file is included in is unnecessary
 namespace tinyxml2 { class XMLDocument; }
@@ -50,5 +51,8 @@ bool FILESYSTEM_openDirectory(const char *dname);
 
 bool FILESYSTEM_delete(const char *name);
 void FILESYSTEM_deleteLevelSaves(void);
+
+// TODO: rename to FILESYSTEM_getBaseName
+std::string getCustomSavenameFromLevelPathname(const std::string& savfile);
 
 #endif /* FILESYSTEMUTILS_H */

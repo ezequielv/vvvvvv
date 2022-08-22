@@ -962,7 +962,9 @@ bool customlevelclass::load(std::string& _path)
 #endif
 
     static const char *levelDir = "levels/";
-    if (_path.compare(0, SDL_strlen(levelDir), levelDir) != 0)
+    if (_path.compare(0, SDL_strlen(levelDir), levelDir) != 0
+        // deal with "levels" (sub)directory already present in the pathname
+        && _path.find("/levels/", 1) == std::string::npos)
     {
         _path = levelDir + _path;
     }

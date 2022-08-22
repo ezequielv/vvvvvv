@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <tinyxml2.h>
 
+#include "FileSystemUtils.h"
+
 #include "BinaryBlob.h"
 #include "Exit.h"
 #include "Graphics.h"
@@ -397,17 +399,28 @@ bool FILESYSTEM_mountAssets(const char* path)
     else
     {
         /* If it's not a zip, look for a level folder */
-        char filename[MAX_PATH];
-        char virtual_path[MAX_PATH];
+        std::string virtual_path_str(path);
+        {
+            const size_t extpos = virtual_path_str.rfind(".vvvvvv");
 
-        VVV_between(path, "levels/", filename, ".vvvvvv");
+            if (extpos == std::string::npos || extpos < 1)
+            {
+                vlog_error("Cannot compute asset directory from input path %s", virtual_path_str.c_str());
+                return false;
+            }
 
-        SDL_snprintf(
-            virtual_path,
-            sizeof(virtual_path),
-            "levels/%s/",
-            filename
-        );
+#if 0 // use same path as level file
+            virtual_path_str = virtual_path_str.substr(0, extpos) + '/';
+#else // "flatten" dirname to "levels/", as in original code
+            virtual_path_str = "levels/" + getCustomSavenameFromLevelPathname(virtual_path_str.substr(0, extpos)) + '/';
+#endif
+        }
+
+        // WARNING: do not modify virtual_path_str from this point onwards (or
+        // create a new 'const std::string' object to have the compiler enforce
+        // that).
+        const char *virtual_path = virtual_path_str.c_str();
+        vlog_debug("FILESYSTEM_mountAssetsFrom(): computed assets_virtual_path from level_virtual_path '%s' -> '%s'", path, virtual_path);
 
         if (FILESYSTEM_exists(virtual_path))
         {
@@ -854,6 +867,13 @@ void FILESYSTEM_enumerateLevelDirFileNames(
     struct CallbackWrapper wrapper = {callback};
 
     success = PHYSFS_enumerate("levels", enumerateCallback, (void*) &wrapper);
+#ifndef _WIN32
+    if (success)
+    {
+        // MAYBE: do not ignore rc ('success = success && ...'), thus also making the 'if' construct unnecessary.
+        PHYSFS_enumerate("levels-parent/levels", enumerateCallback, (void*) &wrapper);
+    }
+#endif
 
     if (success == 0)
     {
@@ -982,4 +1002,22 @@ void FILESYSTEM_deleteLevelSaves(void)
             PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())
         );
     }
+}
+
+// TODO: document that pathnames ending in '/' are not supported (alternative: check that !s.empty() && *(s.rbegin()) != '/')
+std::string getCustomSavenameFromLevelPathname(const std::string& savfile)
+{
+    //+ v1: std::string levelfile;
+    // TODO: create a function to extract the basename from a pathname (from this?)
+    const size_t delimpos = savfile.rfind('/');
+    //+ v1: if (delimpos != std::string::npos)
+    //+ v1: {
+    //+ v1:     levelfile = savfile.substr(delimpos + 1);
+    //+ v1: }
+    //+ v1: else
+    //+ v1: {
+    //+ v1:     levelfile = savfile;
+    //+ v1: }
+    //+ v1: return levelfile;
+    return (delimpos != std::string::npos) ? savfile.substr(delimpos + 1) : savfile;
 }

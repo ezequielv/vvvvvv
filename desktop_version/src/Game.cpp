@@ -400,10 +400,7 @@ void Game::clearcustomlevelstats(void)
 
 void Game::updatecustomlevelstats(std::string clevel, int cscore)
 {
-    if (clevel.find("levels/") != std::string::npos)
-    {
-        clevel = clevel.substr(7);
-    }
+    clevel = getCustomSavenameFromLevelPathname(clevel);
     int tvar=-1;
     for(size_t j=0; j<customlevelstats.size(); j++)
     {
@@ -5073,7 +5070,6 @@ void Game::customloadquick(const std::string& savfile)
     tinyxml2::XMLDocument doc;
     tinyxml2::XMLHandle hDoc(&doc);
     tinyxml2::XMLElement* pElem;
-    std::string levelfile;
 
     if (cliplaytest)
     {
@@ -5086,7 +5082,16 @@ void Game::customloadquick(const std::string& savfile)
         return;
     }
 
-    levelfile = savfile.substr(7);
+    // FIXME: same trick as in the "save"
+    // FIXME: remove endemic use of the 'substr(7)' construct in this file (several other places!)
+    // orig: levelfile = savfile.substr(7);
+    std::string levelfile = getCustomSavenameFromLevelPathname(savfile);
+    if (levelfile.empty())
+    {
+        vlog_error("Could not extract level save (base)name from input filename %s", savfile.c_str());
+        return;
+    }
+
     if (!FILESYSTEM_loadTiXml2Document(("saves/"+levelfile+".vvv").c_str(), doc))
     {
         vlog_error("%s.vvv not found", levelfile.c_str());
@@ -5598,7 +5603,12 @@ std::string Game::writemaingamesave(tinyxml2::XMLDocument& doc)
 
 bool Game::customsavequick(const std::string& savfile)
 {
-    const std::string levelfile = savfile.substr(7);
+    std::string levelfile = getCustomSavenameFromLevelPathname(savfile);
+    if (levelfile.empty())
+    {
+        vlog_error("Could not extract level save (base)name from input filename %s", savfile.c_str());
+        return false;
+    }
 
     tinyxml2::XMLDocument doc;
     bool already_exists = FILESYSTEM_loadTiXml2Document(("saves/" + levelfile + ".vvv").c_str(), doc);
@@ -5976,7 +5986,7 @@ void Game::createmenu( enum Menu::MenuName t, bool samemenu/*= false*/ )
                     int tvar=-1;
                     for(size_t j=0; j<customlevelstats.size(); j++)
                     {
-                        if(cl.ListOfMetaData[i].filename.substr(7) == customlevelstats[j].name)
+                        if(getCustomSavenameFromLevelPathname(cl.ListOfMetaData[i].filename) == customlevelstats[j].name)
                         {
                             tvar=j;
                             break;
@@ -6576,7 +6586,7 @@ void Game::deletetele(void)
 
 void Game::customdeletequick(const std::string& file)
 {
-    const std::string path = "saves/" + file.substr(7) + ".vvv";
+    const std::string path = "saves/" + getCustomSavenameFromLevelPathname(file) + ".vvv";
 
     if (!FILESYSTEM_delete(path.c_str()))
     {

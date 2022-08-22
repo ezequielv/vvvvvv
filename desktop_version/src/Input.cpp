@@ -472,7 +472,7 @@ static void menuactionpress(void)
             game.customleveltitle=cl.ListOfMetaData[game.playcustomlevel].title;
             game.customlevelfilename=cl.ListOfMetaData[game.playcustomlevel].filename;
 
-            std::string name = "saves/" + cl.ListOfMetaData[game.playcustomlevel].filename.substr(7) + ".vvv";
+            std::string name = "saves/" + getCustomSavenameFromLevelPathname(cl.ListOfMetaData[game.playcustomlevel].filename) + ".vvv";
             tinyxml2::XMLDocument doc;
             if (!FILESYSTEM_loadTiXml2Document(name.c_str(), doc)){
                 startmode(22);
